@@ -83,14 +83,15 @@ def TF_IDF(objs,lenght):
 # region Measures
 
 
-def Calculate_Measures(query, TFModel, counter):
+def Calculate_Measures(query, vectors_database, count_documents,documents_number):
     measures = defaultdict(list)
-    for i in range(counter):
+    for i in range(count_documents):
         cur = defaultdict(list)
-        for key, value in TFModel.items():
+        for key, value in vectors_database.items():
             cur[key].append(value[i])
         cur = DictAdd(query, cur)
         query = DictAdd(cur, query)
+        measures[i].append(documents_number[i])
         measures[i].append(CalcCos(query, cur))
         measures[i].append(CalcJacc(query, cur))
         measures[i].append(CalcDice(query, cur))
@@ -138,34 +139,29 @@ def DictAdd(query, cur):
 # endregion
 
 print("Введите номера документов. Для окончания ввода введите s")
-inputDocuments = []
-inpNumber = []
+documents_input = []
+documents_number = []
 while True:
     inp = str(input())
-    if inp == "s":
+    if inp == "s" or "ы":
         break
     else:
-        inpNumber.append(int(inp))
-        inputDocuments.append(dataset[int(inp)])
+        documents_number.append(int(inp))
+        documents_input.append(dataset[int(inp)])
 lengths_of_documents=[];
-vectors = Get_vector_frequency(inputDocuments);
-query = dataset[1];
+vectors = Get_vector_frequency(documents_input);
+print("Введите запрос")
+query = str(input())
+#query = dataset[1];
 vector_query=Get_vector_frequency([query])
-measures=Calculate_Measures(vector_query,vectors,inputDocuments.__len__())
+measures=Calculate_Measures(vector_query,vectors,documents_input.__len__(),documents_number)
 
 def TableFiller(objs):
     x = PrettyTable()
     x.field_names = ["Текст", "Cosine", "Jaccard", "Dice"]
+    objs =  OrderedDict(sorted(objs.items(), key=lambda item: item[1][1], reverse=True))
     for i in objs.items():
-        Token = i[0]
-        ID = i[1][0]
-        Count = i[1][1]
-        doc1=i[1][2]
-        doc2 = i[1][3]
-        doc3 = i[1][4]
-        doc4 = i[1][5]
-
-        x.add_row([ID, Token, Count, doc1, doc2, doc3, doc4])
+        x.add_row(["Текст " + str(i[1][0]), i[1][1], i[1][2], i[1][3]])
     return x
 
-print(TableFiller(vectors))
+print(TableFiller(measures))
