@@ -15,12 +15,12 @@ from prettytable import PrettyTable
 def import_documents(documents_name, directory):
     dataset = []
     for document in documents_name:
-        dataset.append(get_document_data(document,directory))
+        dataset.append(get_document_data(document, directory))
     return dataset
 
 
-def get_document_data(file,directory):
-    with open(directory+"/" + file + ".txt", "r", encoding="utf-8") as file:
+def get_document_data(file, directory):
+    with open(directory + "/" + file + ".txt", "r", encoding="utf-8") as file:
         return str(file.readlines());
 
 
@@ -51,6 +51,7 @@ def remove_empties(objs):
 
 
 # endregion
+
 # region VSM
 def Get_vector_frequency(dataset):
     objs = defaultdict(list)
@@ -75,6 +76,7 @@ def Get_vector_frequency(dataset):
         id_document += 1
     return objs, lengths_of_documents
 
+
 def get_lemma(dataset):
     objs = defaultdict(list)
     inp = dataset.lower()
@@ -85,19 +87,16 @@ def get_lemma(dataset):
     for token in list(doc):
         token = token.lemma_
         if token not in objs.keys():
-                objs[token].append(0)
+            objs[token].append(1)
+        else:
+            objs[token][0] += 1;
     objs = remove_empties(objs)
     return objs
+
 
 # endregion
 
 # region Bayes
-
-def get_count_word_in_corpus(lengths_of_documents):
-    length = 0
-    for item in lengths_of_documents:
-        length += item
-    return length
 
 
 def get_count_word_in_classes(lengths_of_documents):
@@ -136,17 +135,44 @@ def calculate_pwc_for_each_class(vectors_count_ws, count_word_in_corpus, count_w
 
 
 def calculate_pcd(vectors_request, vectors_pws_database):
-    pcd=[0,0,0]
-    pc=math.log(1/3)
+    pcd = [0, 0, 0]
+    pc = math.log(1 / 3)
     for token in vectors_request:
-        for i in range(0,3):
-            if token[0] in vectors_pws_database.keys():
-                pcd[i] += math.log(vectors_pws_database[token[0]][i])
+        for i in range(0, 3):
+            if token in vectors_pws_database.keys():
+                pcd[i] += math.log(vectors_pws_database[token][i])
     for i in range(0, 3):
         pcd[i] += pc
     return pcd;
 
+
 # endregion
+
+# region Tables
+def table_filler_object(objs):
+    x = PrettyTable()
+    x.field_names = ["token", 'C1_1', 'C1_2', 'C1_3', 'C2_1', 'C2_2', 'C2_3', 'C3_1', 'C3_2', 'C3_3']
+    for i in objs.items():
+        x.add_row([str(i[0]), i[1][0], i[1][1], i[1][2], i[1][3], i[1][4], i[1][5], i[1][6], i[1][7], i[1][8]])
+    return x
+
+
+def table_filler_one(objs):
+    x = PrettyTable()
+    x.field_names = ["token", 'C1_1']
+    for i in objs.items():
+        x.add_row([str(i[0]), i[1][0]])
+    return x
+
+
+
+def table_filler_pws(objs):
+    x = PrettyTable()
+    x.field_names = ["token", 'pws1', 'pws2', 'pws3']
+    for i in objs.items():
+        x.add_row([str(i[0]), str(i[1][0]), str(i[1][1]), str(i[1][2])])
+    return x
+
 
 def table_filler(objs):
     x = PrettyTable()
@@ -154,22 +180,38 @@ def table_filler(objs):
     x.add_row([str(objs[0]), str(objs[1]), str(objs[2])])
     return x
 
+# endregion
+
 
 def main():
-    documents_name = ['C1_1', 'C1_2', 'C1_3', 'C2_1', 'C2_2', 'C2_3', 'C3_1', 'C3_2', 'C3_3'];
-    dataset = import_documents(documents_name,"train")
+    documents_name = ['C1_1', 'C1_2', 'C1_3',  'C2_1', 'C2_2', 'C2_3', 'C3_1', 'C3_2', 'C3_3'];
+    dataset = import_documents(documents_name, "train")
     vectors_frequencies, lengths_of_documents = Get_vector_frequency(dataset);
-    count_word_in_corpus = get_count_word_in_corpus(lengths_of_documents);
+    count_word_in_corpus = vectors_frequencies.__len__();
     count_word_in_classes = get_count_word_in_classes(lengths_of_documents);
     vectors_count_ws = calculate_count_wc(vectors_frequencies);
     vectors_pws = calculate_pwc_for_each_class(vectors_count_ws, count_word_in_corpus, count_word_in_classes);
-    #print(table_filler(vectors_pws))
-    # print("Найдено уникальных слов "+vectors_count_ws.__len__())
+    # print(table_filler(vectors_pws))
+    print("Найдено уникальных слов "+str(vectors_count_ws.__len__()))
+    print("Выбрать документ или ввести запрос (1/2)")
+    answer = input();
+    dataset
     documents_name = ['unknown1', 'unknown2', 'unknown3'];
-    dataset = get_document_data('unknown3','test')
-    vectors_frequencies = get_lemma(dataset);
-    pcd = calculate_pcd(vectors_frequencies, vectors_pws)
+    if answer == "1":
+        print("Введите номер документа (1/2/3)")
+        answer = int(input()) - 1
+        dataset = get_document_data(documents_name[answer], 'test')
+    else:
+        print("Введите запрос")
+        dataset = input()
+
+    vectors_request = get_lemma(dataset);
+    pcd = calculate_pcd(vectors_request, vectors_pws)
+    print(table_filler_object(vectors_frequencies))
+    print(table_filler_one(vectors_request))
     print(table_filler(pcd))
+  #  print(table_filler_pws(vectors_pws))
+
 
 
 main()
